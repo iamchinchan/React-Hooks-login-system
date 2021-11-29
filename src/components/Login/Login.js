@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useReducer,useContext } from "react";
+import React, {
+  useState,
+  useEffect,
+  useReducer,
+  useContext,
+  useRef,
+} from "react";
 
 import Card from "../UI/Card/Card";
 import classes from "./Login.module.css";
@@ -6,6 +12,7 @@ import Button from "../UI/Button/Button";
 import AuthContext, { AuthContextProvider } from "../../store/auth-context";
 import userEvent from "@testing-library/user-event";
 import { useCallback } from "react/cjs/react.development";
+import InputField from "../UI/Input/InputField";
 
 const emailReducer = (state, action) => {
   if (action.type === "USER_INPUT") {
@@ -42,16 +49,16 @@ const Login = (props) => {
   });
 
   const authCtx = useContext(AuthContext);
-  const {isValid:emailIsValid}=emailState;
-  const {isValid:passwordIsValid}=passwordState
+  const { isValid: emailIsValid } = emailState;
+  const { isValid: passwordIsValid } = passwordState;
 
+  const emailRef = useRef();
+  const passwordRef = useRef();
   useEffect(() => {
     //debouncing
     const identifier = setTimeout(() => {
       console.log("checking form validity");
-      setFormIsValid(
-        emailIsValid && passwordIsValid
-      );
+      setFormIsValid(emailIsValid && passwordIsValid);
     }, 500);
 
     return () => {
@@ -62,7 +69,7 @@ const Login = (props) => {
     // this clean up fn will run
     //and in addition, the clean up fn will run whenever the component we are specifying the effect in, unmounts from the dom.
     // so whenever the component is re used.
-  }, [emailIsValid,passwordIsValid]);
+  }, [emailIsValid, passwordIsValid]);
 
   const emailChangeHandler = (event) => {
     dispatchEmail({ type: "USER_INPUT", val: event.target.value });
@@ -82,47 +89,46 @@ const Login = (props) => {
   };
 
   const validatePasswordHandler = () => {
-    dispatchPassword({type:"INPUT_BLUR"});
+    dispatchPassword({ type: "INPUT_BLUR" });
   };
 
   const submitHandler = (event) => {
     event.preventDefault();
-    authCtx.onLogin(emailState.value, passwordState.value);
+    if (formIsValid) {
+      authCtx.onLogin(emailState.value, passwordState.value);
+    } else if (!emailIsValid) {
+      emailRef.current.focus();
+    } else {
+      //password is invalid
+      passwordRef.current.focus();
+    }
   };
 
   return (
     <Card className={classes.login}>
       <form onSubmit={submitHandler}>
-        <div
-          className={`${classes.control} ${
-            emailState.isValid === false ? classes.invalid : ""
-          }`}
-        >
-          <label htmlFor="email">E-Mail</label>
-          <input
-            type="email"
-            id="email"
-            value={emailState.value}
-            onChange={emailChangeHandler}
-            onBlur={validateEmailHandler}
-          />
-        </div>
-        <div
-          className={`${classes.control} ${
-            passwordState.isValid === false ? classes.invalid : ""
-          }`}
-        >
-          <label htmlFor="password">Password</label>
-          <input
-            type="password"
-            id="password"
-            value={passwordState.value}
-            onChange={passwordChangeHandler}
-            onBlur={validatePasswordHandler}
-          />
-        </div>
+        <InputField
+          ref={emailRef}
+          labelName="E-Mail"
+          type="email"
+          id="email"
+          isValid={emailIsValid}
+          value={emailState.value}
+          onChange={emailChangeHandler}
+          onBlur={validateEmailHandler}
+        ></InputField>
+        <InputField
+          ref={passwordRef}
+          labelName="Password"
+          type="password"
+          id="password"
+          isValid={passwordIsValid}
+          value={passwordState.value}
+          onChange={passwordChangeHandler}
+          onBlur={validatePasswordHandler}
+        ></InputField>
         <div className={classes.actions}>
-          <Button type="submit" className={classes.btn} disabled={!formIsValid}>
+          <Button type="submit" className={classes.btn}>
             Login
           </Button>
         </div>
